@@ -1,25 +1,71 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Include the ggplot2 library
+```{r}
+library(ggplot2)
 
+```
 
 ## Loading and preprocessing the data
+```{r}
 
+unzip(zipfile = "activity.zip")
+data <- read.csv("activity.csv")
 
+activityData<-read.csv("activity.csv")
 
+```
 ## What is mean total number of steps taken per day?
+```{r}
 
-
+sumByDay<-aggregate(activityData$steps,by=list(activityData$date), sum, na.rm=TRUE)
+colnames(sumByDay)<-c("date","steps")
+hist(sumByDay$steps, main = "Total Steps per Day", xlab="Number of steps")
+mean(sumByDay$steps,na.rm=TRUE)
+median(sumByDay$steps,na.rm=TRUE)
+```
 
 ## What is the average daily activity pattern?
+```{r}
 
+averages <- aggregate(x = list(steps = activityData$steps), by = list(interval = activityData$interval),FUN = mean, na.rm = TRUE)
 
+ggplot(averages, aes(x =interval , y=steps)) + geom_line() + labs(title = "Average Steps per Interval", x = "Interval", y = "Steps")
+
+```
 
 ## Imputing missing values
+```{r}
+missingValues <- sum(is.na(activityData$steps))
+ dataFill<-activityData
+for (rowNum in 1:nrow(dataFill)) {
+ if (is.na(dataFill[rowNum, 1])) {   
+   dataFill[rowNum, 1] <- averages[averages$interval == dataFill[rowNum, 3], 2]   
+ }
+}
 
+sumByDay2<-aggregate(dataFill$steps,by=list(dataFill$date), sum, na.rm=TRUE)
+colnames(sumByDay2)<-c("date","steps")
+hist(sumByDay2$steps, main = "Total Steps per Day (with imputed data)", xlab="Number of steps")
 
+mean(sumByDay2$steps,na.rm=TRUE)
+
+median(sumByDay2$steps,na.rm=TRUE)
+
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+days <- weekdays(as.Date(dataFill$date))
+dataFill$weekDay <- "weekday"
+ 
+for (numRow in 1:nrow(dataFill)) {
+ if ((days[numRow]== "Saturday") | (days[numRow]== "Sunday")) {   
+   dataFill[numRow, 4] <- "weekend"
+ }
+}
+
+averages <- aggregate(dataFill$steps, list(interval = dataFill$interval, weekday = dataFill$weekDay), mean)
+colnames(averages) <- c("interval", "weekday", "steps")
+ggplot(averages, aes(x = interval, y = steps)) + geom_line() + facet_grid(weekday ~ .) + labs(title = "Average steps per interval", x = "Interval",y = "Steps")
+
+```
+
